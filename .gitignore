@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite3
+
+# Large files and assets
+*.onnx
+anime_models/
+assets/landing/
+assets/pic.jpg
+assets/picc.jpg
+assets/Crisp edges, bright colors and smooth cartoon finish images input image side and edited image side - Google Search_files/
+
+# User uploaded images
+data/user_images/
+
+# Input images (if large)
+Input Image/*.png
+Input Image/*.jpg
+Input Image/*.jpeg
+
+# Logs
+*.log
+
+# Environment variables
+.env
