@@ -55,3 +55,5 @@ temp/
 data/transactions/
 __pycache__/
 .env
+anime_models/
+*.onnx
