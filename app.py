@@ -1,16 +1,15 @@
 """
 Toonify: The Art of Cartooning Images
-Main Streamlit Application - FIXED FOR STREAMLIT 1.31.0
-
-FLOW: Landing Page → Login Page → Dashboard → Logout → Login Page
 """
-
-
 import streamlit as st
+import time
 from utils.auth import init_session_state, is_logged_in, logout_user
 from utils.database import Database
 from utils.validators import *
 from utils.image_processor import ImageProcessor
+from payment_system.payment_gateway import render_payment_gateway
+from admin_dashboard import render_admin_dashboard
+
 import os
 from PIL import Image
 import cv2
@@ -28,14 +27,190 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.markdown(
+    """
+    <style>
+    /* ===== STREAMLIT ALERTS ONLY ===== */
+
+    /* Error */
+    div[data-testid="stAlert"][data-alert-type="error"] {
+        background: rgba(220, 53, 69, 0.85) !important;
+        color: white !important;
+    }
+
+    /* Warning */
+    div[data-testid="stAlert"][data-alert-type="warning"] {
+        background: rgba(255, 193, 7, 0.85) !important;
+        color: white !important;
+    }
+
+    /* Success */
+    div[data-testid="stAlert"][data-alert-type="success"] {
+        background: rgba(25, 135, 84, 0.85) !important;
+        color: white !important;
+    }
+
+    /* Info */
+    div[data-testid="stAlert"][data-alert-type="info"] {
+        background: rgba(13, 110, 253, 0.85) !important;
+        color: white !important;
+    }
+
+    /* Alert text */
+    div[data-testid="stAlert"] p {
+        color: white !important;
+        font-weight: 600;
+        font-size: 15px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # =============================================================================
-# GLOBAL CSS STYLES (FIXED - Profile & Change Password Box Colors)
+# HELPER FUNCTION FOR IMAGE ENCODING
+# =============================================================================
+def image_to_base64(img_path):
+    """Convert image to base64 for HTML display"""
+    try:
+        with open(img_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return None
+
+# =============================================================================
+# DYNAMIC BACKGROUND FUNCTION - WITH BRIGHTNESS/CONTRAST CONTROL
+# =============================================================================
+def set_page_background(page_name):
+    """Set unique background for each page with brightness and contrast control"""
+    
+    # Define background images for each page
+    backgrounds = {
+        "landing": None,  # Landing uses basic colors (no image)
+        "login": "assets/backgrounds/login_bg.png",
+        "register": "assets/backgrounds/register_bg.png",
+        "admin_login": "assets/backgrounds/admin_bg.png",
+        "dashboard": "assets/backgrounds/dashboard_bg.jpg",
+        "admin_dashboard": "assets/backgrounds/admin_dashboard_bg.jpg",
+        "payment": "assets/backgrounds/payment_bg.png",
+    }
+    
+    # ADJUST THESE VALUES TO CONTROL BRIGHTNESS AND CONTRAST
+    page_settings = {
+        "login": {
+            "brightness": 0.7,
+            "contrast": 1.2,
+            "blur": 0,
+            "overlay": 0.3
+        },
+        "register": {
+            "brightness": 0.75,
+            "contrast": 1.1,
+            "blur": 0,
+            "overlay": 0.2
+        },
+        "admin_login": {
+            "brightness": 0.6,
+            "contrast": 1.3,
+            "blur": 0,
+            "overlay": 0.4
+        },
+        "dashboard": {
+            "brightness": 0.8,
+            "contrast": 1.0,
+            "blur": 2,
+            "overlay": 0.2
+        },
+        "admin_dashboard": {
+            "brightness": 0.65,
+            "contrast": 1.25,
+            "blur": 0,
+            "overlay": 0.35
+        },
+        "payment": {
+            "brightness": 0.7,
+            "contrast": 1.2,
+            "blur": 0,
+            "overlay": 0.3
+        }
+    }
+    
+    # Get background for current page
+    bg_image_path = backgrounds.get(page_name)
+    settings = page_settings.get(page_name, {
+        "brightness": 1.0,
+        "contrast": 1.0,
+        "blur": 0,
+        "overlay": 0
+    })
+    
+    if page_name == "landing" or bg_image_path is None:
+        # Landing page uses basic gradient colors
+        st.markdown("""
+            <style>
+            .stApp {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            </style>
+        """, unsafe_allow_html=True)
+    else:
+        # Other pages use their specific background image with effects
+        bg_base64 = image_to_base64(bg_image_path)
+        if bg_base64:
+            st.markdown(f"""
+                <style>
+                /* Background image layer */
+                .stApp::before {{
+                    content: "";
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: url("data:image/jpeg;base64,{bg_base64}");
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
+                    filter: brightness({settings['brightness']}) 
+                            contrast({settings['contrast']}) 
+                            blur({settings['blur']}px);
+                    z-index: -2;
+                }}
+                
+                /* Dark overlay layer */
+                .stApp::after {{
+                    content: "";
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, {settings['overlay']});
+                    z-index: -1;
+                }}
+                
+                /* Ensure .stApp itself is transparent */
+                .stApp {{
+                    background: transparent !important;
+                }}
+                </style>
+            """, unsafe_allow_html=True)
+        else:
+            # Fallback if image not found
+            st.markdown("""
+                <style>
+                .stApp {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+# =============================================================================
+# GLOBAL CSS STYLES
 # =============================================================================
 st.markdown("""
     <style>
-    .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .main-header {
         font-size: 3.5rem;
         font-weight: bold;
@@ -54,7 +229,6 @@ st.markdown("""
         text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     }
     
-    /* FIXED: Form styling matching login page */
     .stForm {
         background: rgba(255, 255, 255, 0.95) !important;
         padding: 2rem;
@@ -63,7 +237,6 @@ st.markdown("""
         backdrop-filter: blur(10px);
     }
     
-    /* FIXED: Input fields - dark text on white background */
     .stTextInput>div>div>input, 
     .stNumberInput>div>div>input, 
     .stSelectbox>div>div>select {
@@ -88,7 +261,6 @@ st.markdown("""
         color: #000000 !important;
     }
     
-    /* FIXED: Labels - dark text */
     .stTextInput>label, 
     .stNumberInput>label, 
     .stSelectbox>label {
@@ -105,7 +277,6 @@ st.markdown("""
         color: #000000 !important;
     }
     
-    /* FIXED: Info box for profile (white background like login) */
     .info-box {
         padding: 2rem;
         border-radius: 20px;
@@ -126,7 +297,6 @@ st.markdown("""
         color: #667eea !important;
     }
     
-    /* Buttons */
     .stButton>button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -143,7 +313,6 @@ st.markdown("""
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
     }
     
-    /* Sidebar styling */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
     }
@@ -159,7 +328,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.3);
     }
     
-    /* Download button */
     .stDownloadButton>button {
         background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         color: white;
@@ -167,7 +335,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* Hero and feature sections */
     .hero-sub {
         font-size: 22px;
         text-align: center;
@@ -217,23 +384,19 @@ st.markdown("""
         font-size: 19px;
     }
     
-    /* Fix for markdown text in forms */
     .stMarkdown p {
         color: inherit;
     }
     
-    /* Fix for expander */
     .streamlit-expanderHeader {
         background-color: rgba(255, 255, 255, 0.1);
         color: #333333;
     }
     
-    /* Fix for error/success/info messages */
     .stAlert {
         background-color: rgba(255, 255, 255, 0.95);
     }
     
-    /* Animations */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
@@ -241,6 +404,12 @@ st.markdown("""
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Card number formatting */
+    .card-number-input {
+        letter-spacing: 3px;
+        font-family: monospace;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -258,21 +427,22 @@ if "page" not in st.session_state:
     else:
         st.session_state.page = "landing"
 
+# Initialize payment state
+if "show_payment" not in st.session_state:
+    st.session_state.show_payment = False
+
+if "payment_image_path" not in st.session_state:
+    st.session_state.payment_image_path = None
+
 # Auto-redirect logged-in users to dashboard
 if is_logged_in() and st.session_state.page in ["landing", "login", "register"]:
     st.session_state.page = "dashboard"
     st.rerun()
 
 # =============================================================================
-# HELPER FUNCTION FOR IMAGE ENCODING
+# SET BACKGROUND BASED ON CURRENT PAGE
 # =============================================================================
-def image_to_base64(img_path):
-    """Convert image to base64 for HTML display"""
-    try:
-        with open(img_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except:
-        return None
+set_page_background(st.session_state.page)
 
 # =============================================================================
 # 🏠 LANDING PAGE
@@ -282,7 +452,6 @@ if st.session_state.page == "landing":
     st.markdown("<div class='main-header'>Toonify - AI Cartoon Generator</div>", unsafe_allow_html=True)
     st.markdown("<div class='sub-header'>Turn your photos into stunning cartoon-style artwork!</div>", unsafe_allow_html=True)
     
-    # FIXED: Removed gap parameter (not available in 1.31.0)
     col_left, col_center, col_right = st.columns([4, 4, 1])
     with col_right:
         if st.button("Login →", key="landing_login"):
@@ -418,7 +587,7 @@ if st.session_state.page == "landing":
         <div class="footer">
             Created by <b>Prem Kumar</b> &nbsp; | &nbsp;
             Email: <b>raviprem.2004@gmail.com</b> &nbsp; | &nbsp;
-            Phone: <b>+91 1234567890</b> &nbsp; | &nbsp;
+            Phone: <b>+91 8248070047</b> &nbsp; | &nbsp;
             © 2025 Toonify - All Rights Reserved
         </div>
     """, unsafe_allow_html=True)
@@ -472,6 +641,73 @@ elif st.session_state.page == 'login' and not is_logged_in():
                 st.session_state.page = 'register'
                 st.rerun()
     
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        if st.button("👨‍💼 Admin Login", use_container_width=True, type="secondary"):
+            st.session_state.page = "admin_login"
+            st.rerun()
+    
+    st.stop()
+
+# =============================================================================
+# 👨‍💼 ADMIN LOGIN PAGE
+# =============================================================================
+elif st.session_state.page == 'admin_login':
+
+    st.markdown('<h1 class="main-header">👨‍💼 Admin Login</h1>', unsafe_allow_html=True)
+    st.markdown('<h2 class="sub-header">Toonify Administration Portal</h2>', unsafe_allow_html=True)
+
+    if st.button("← Back to User Login"):
+        st.session_state.page = "login"
+        st.rerun()
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown("## 🔐 Admin Access")
+
+        with st.form("admin_login_form"):
+            email = st.text_input("📧 Admin Email", placeholder="admin@toonify.com")
+            password = st.text_input("🔒 Admin Password", type="password")
+
+            submit = st.form_submit_button(
+                "Login as Admin",
+                use_container_width=True,
+                type="primary"
+            )
+
+            if submit:
+                if not email or not password:
+                    st.error("❌ Please fill in all fields")
+                else:
+                    success, result = db.authenticate_admin(email, password)
+                    if success:
+                        from utils.auth import login_user
+                        login_user(result)
+                        st.success("✅ Admin login successful!")
+                        st.session_state.page = "admin_dashboard"
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {result}")
+
+        st.info("ℹ️ Default: admin@toonify.com / Admin@123")
+
+    st.stop()
+
+# =============================================================================
+# 📊 ADMIN DASHBOARD PAGE
+# =============================================================================
+elif st.session_state.page == 'admin_dashboard' and is_logged_in():
+
+    if st.session_state.user_data.get("is_admin"):
+        render_admin_dashboard()
+    else:
+        st.error("❌ Unauthorized access")
+        st.session_state.page = "dashboard"
+        st.rerun()
+
     st.stop()
 
 # =============================================================================
@@ -568,7 +804,38 @@ elif st.session_state.page == 'register':
     st.stop()
 
 # =============================================================================
-# 🎨 DASHBOARD PAGE
+# 💳 PAYMENT GATEWAY PAGE
+# =============================================================================
+elif st.session_state.get('show_payment', False) and is_logged_in():
+    user = st.session_state.user_data
+    image_path = st.session_state.payment_image_path
+
+    # SAFETY CHECK: ensure effect is selected
+    if "selected_effect" not in st.session_state:
+        st.error("❌ No style selected. Please apply an effect first.")
+        st.session_state.show_payment = False
+        st.stop()
+
+    effect_name = st.session_state.selected_effect
+    
+    # Render payment gateway
+    payment_success = render_payment_gateway(
+        image_path,
+        user["email"],
+        effect_name
+    )
+
+    if payment_success:
+        st.session_state.show_payment = False
+        st.session_state.payment_image_path = None
+        st.session_state.selected_effect = None
+        # JavaScript in payment_gateway.py handles auto-redirect after 5 seconds
+        # No need for time.sleep() or rerun here
+
+    st.stop()
+
+# =============================================================================
+# 🎨 DASHBOARD PAGE (with Gallery in Profile)
 # =============================================================================
 elif is_logged_in():
     
@@ -584,6 +851,10 @@ elif is_logged_in():
         if st.button("📊 View Full Profile", use_container_width=True):
             st.session_state.show_profile = True
         
+        # NEW: Gallery Button
+        if st.button("🖼️ My Gallery", use_container_width=True):
+            st.session_state.show_gallery = True
+        
         if st.button("🔐 Change Password", use_container_width=True):
             st.session_state.show_change_password = True
         
@@ -594,7 +865,7 @@ elif is_logged_in():
             st.session_state.page = "login"
             st.rerun()
     
-    # Show Profile Modal (FIXED STYLING)
+    # Show Profile Modal
     if st.session_state.get('show_profile', False):
         col1, col2, col3 = st.columns([1, 4, 1])
         with col2:
@@ -616,9 +887,219 @@ elif is_logged_in():
                 st.rerun()
         st.stop()
     
-    # Show Change Password Modal (FIXED STYLING)
-    if st.session_state.get('show_change_password', False):
+    # NEW: Show Gallery Modal
+    if st.session_state.get('show_gallery', False):
+        st.markdown('<h1 class="main-header">🖼️ My Gallery</h1>', unsafe_allow_html=True)
+        st.markdown('<h2 class="sub-header">Your Edited Images</h2>', unsafe_allow_html=True)
+        
+        if st.button("← Back to Dashboard", use_container_width=False):
+            st.session_state.show_gallery = False
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Get user's image history
+        user_images = db.get_user_image_history(user['email'])
+        
+        if user_images:
+            st.markdown(f"### 🎨 Total Images: {len(user_images)}")
+            
+            # Display images in grid
+            cols_per_row = 3
+            for idx in range(0, len(user_images), cols_per_row):
+                cols = st.columns(cols_per_row)
+                
+                for col_idx, img_data in enumerate(user_images[idx:idx+cols_per_row]):
+                    effect_name, image_path, amount, transaction_id, created_at = img_data
+                    
+                    with cols[col_idx]:
+                        try:
+                            if os.path.exists(image_path):
+                                img = Image.open(image_path)
+                                st.image(img, use_column_width=True)
+                                
+                                st.markdown(f"""
+                                <div style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1rem;">
+                                    <p style="color: #667eea; font-weight: bold; font-size: 1.1rem; margin: 0; text-align: center;">
+                                        {effect_name}
+                                    </p>
+                                    <p style="color: #28a745; font-size: 1.2rem; font-weight: bold; margin: 0.3rem 0; text-align: center;">
+                                        💰 ₹{amount}
+                                    </p>
+                                    <p style="color: #666; font-size: 0.85rem; margin: 0; text-align: center;">
+                                        📅 {created_at}
+                                    </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Download button for each image
+                                with open(image_path, 'rb') as file:
+                                    file_data = file.read()
+                                    st.download_button(
+                                        label="📥 Download",
+                                        data=file_data,
+                                        file_name=f"{effect_name}_{transaction_id[-8:]}.png",
+                                        mime="image/png",
+                                        key=f"download_{transaction_id}",
+                                        use_container_width=True
+                                    )
+                            else:
+                                st.warning(f"Image not found: {effect_name}")
+                        except Exception as e:
+                            st.error(f"Error loading image: {e}")
+            
+            # Total spent summary
+            total_spent = sum([img[2] for img in user_images])
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); 
+                        padding: 2rem; border-radius: 15px; text-align: center; margin-top: 2rem;">
+                <p style="color: white; font-size: 2rem; font-weight: bold; margin: 0;">
+                    💰 Total Spent: ₹{total_spent}
+                </p>
+                <p style="color: white; font-size: 1.1rem; margin-top: 0.5rem;">
+                    {len(user_images)} Images Processed
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("📷 You haven't edited any images yet. Start creating your first cartoon masterpiece!")
+            
+            if st.button("🎨 Start Editing", use_container_width=True):
+                st.session_state.show_gallery = False
+                st.rerun()
+        
+        st.stop()
+    
+    # Main Dashboard - Image Editor
+    st.markdown('<h1 class="main-header">🎨 Image Editor</h1>', unsafe_allow_html=True)
+    st.markdown('<h2 class="sub-header">Upload and transform your images</h2>', unsafe_allow_html=True)
+    
+    # Image upload and effect selection in two columns
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📤 Upload Image")
+        uploaded_file = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'])
+        
+        if uploaded_file is not None:
+            # Save uploaded image
+            import tempfile
+            import os
+            
+            # Create temp directory if not exists
+            temp_dir = "temp"
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Save uploaded file
+            uploaded_path = os.path.join(temp_dir, uploaded_file.name)
+            with open(uploaded_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Display uploaded image
+            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+            
+            # Store in session
+            st.session_state.uploaded_image_path = uploaded_path
+    
+    with col2:
+        st.markdown("### 🎨 Select Style")
+        
+        # Initialize ImageProcessor
+        processor = ImageProcessor()
+        available_effects = processor.get_available_effects()
+        
+        # Display style cards with prices
+        selected_effect = None
+        cols = st.columns(2)
+        
+        for idx, effect in enumerate(available_effects):
+            with cols[idx % 2]:
+                # Get price for this effect
+                from payment_system.payment_handler import PaymentHandler
+                payment_handler = PaymentHandler()
+                price = payment_handler.style_prices.get(effect, 99.00)
+                
+                if st.button(f"""
+                **{effect}**  
+                💰 ₹{price}
+                """, use_container_width=True, key=f"effect_{effect}"):
+                    selected_effect = effect
+                    st.session_state.selected_effect = effect
+        
+        if selected_effect:
+            st.success(f"✅ Selected: {selected_effect}")
+            
+            if st.session_state.get('uploaded_image_path'):
+                # Process image
+                with st.spinner(f"🔄 Applying {selected_effect} style..."):
+                    try:
+                        # Load and process image
+                        import cv2
+                        from PIL import Image
+                        
+                        # Read image
+                        img = cv2.imread(st.session_state.uploaded_image_path)
+                        
+                        # Process with selected effect
+                        result = processor.process_image(img, selected_effect)
+                        
+                        # Save processed image
+                        import time
+                        timestamp = int(time.time())
+                        output_path = f"temp/processed_{timestamp}.png"
+                        cv2.imwrite(output_path, result)
+                        
+                        # Store in session
+                        st.session_state.processed_image = result
+                        st.session_state.processed_path = output_path
+                        st.session_state.effect_applied = selected_effect
+                        
+                        st.success("✅ Style applied successfully!")
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error processing image: {e}")
+    
+    # Display processed image if available
+    if st.session_state.get('processed_image') is not None:
+        st.markdown("---")
+        st.markdown("### 🖼️ Result")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.session_state.get('uploaded_image_path'):
+                st.image(st.session_state.uploaded_image_path, caption="Original", use_column_width=True)
+        
+        with col2:
+            st.image(st.session_state.processed_path, caption=f"{st.session_state.effect_applied} Style", use_column_width=True)
+        
+        # Payment button
+        st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            # Get price for the applied effect
+            from payment_system.payment_handler import PaymentHandler
+            payment_handler = PaymentHandler()
+            price = payment_handler.style_prices.get(st.session_state.effect_applied, 99.00)
+            
+            st.markdown(f"""
+            <div style="background: #e8f5e8; padding: 1.5rem; border-radius: 15px; text-align: center; margin-bottom: 1.5rem; border: 2px solid #28a745;">
+                <p style="color: #000000; font-size: 1.5rem; font-weight: bold; margin: 0;">
+                    Amount: ₹{price}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("💳 Proceed to Payment", use_container_width=True, type="primary"):
+                st.session_state.payment_image_path = st.session_state.processed_path
+                st.session_state.show_payment = True
+                st.rerun()
+    
+    # Change Password Modal
+    if st.session_state.get('show_change_password', False):
+        col1, col2, col3 = st.columns([1, 3, 1])
+        
         with col2:
             st.markdown("## 🔐 Change Password")
             
@@ -626,12 +1107,6 @@ elif is_logged_in():
                 current_password = st.text_input("Current Password", type="password")
                 new_password = st.text_input("New Password", type="password")
                 confirm_password = st.text_input("Confirm New Password", type="password")
-                
-                with st.expander("📋 Password Requirements"):
-                    st.markdown("""
-                    - Minimum 8 characters
-                    - At least one uppercase, lowercase, number, special character
-                    """)
                 
                 col_submit, col_cancel = st.columns(2)
                 
@@ -642,214 +1117,19 @@ elif is_logged_in():
                     cancel = st.form_submit_button("Cancel", use_container_width=True)
                 
                 if submit:
-                    if not all([current_password, new_password, confirm_password]):
-                        st.error("❌ Please fill in all fields")
-                    elif new_password != confirm_password:
-                        st.error("❌ New passwords do not match")
+                    if new_password != confirm_password:
+                        st.error("❌ New passwords don't match")
                     else:
-                        valid, msg = validate_password(new_password)
-                        if not valid:
-                            st.error(f"❌ {msg}")
+                        success, message = db.update_password(user['email'], current_password, new_password)
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.session_state.show_change_password = False
+                            st.rerun()
                         else:
-                            success, message = db.update_password(user['email'], current_password, new_password)
-                            if success:
-                                st.success(f"✅ {message}")
-                                st.session_state.show_change_password = False
-                                st.rerun()
-                            else:
-                                st.error(f"❌ {message}")
+                            st.error(f"❌ {message}")
                 
                 if cancel:
                     st.session_state.show_change_password = False
                     st.rerun()
+        
         st.stop()
-    
-    # Main Dashboard Content
-    st.markdown('<h1 class="main-header">🎨 Toonify Dashboard</h1>', unsafe_allow_html=True)
-    st.markdown(f"## Welcome back, {user['name']}! 👋")
-    
-    st.markdown("---")
-    
-    # Initialize Image Processor
-    if 'processor' not in st.session_state:
-        with st.spinner("🔄 Loading AI models..."):
-            try:
-                st.session_state.processor = ImageProcessor()
-                available_effects = st.session_state.processor.get_available_effects()
-                st.success(f"✅ Loaded {len(available_effects)} effects!")
-            except Exception as e:
-                st.error(f"❌ Error loading models: {e}")
-                st.info("⚠️ Some AI models may not be available. OpenCV effects will still work.")
-    
-    processor = st.session_state.processor
-    available_effects = processor.get_available_effects()
-    
-    # Create user directories
-    user_dir = f"data/user_images/{user['email'].replace('@', '_').replace('.', '_')}"
-    original_dir = f"{user_dir}/original"
-    cartoonized_dir = f"{user_dir}/cartoonized"
-    
-    os.makedirs(original_dir, exist_ok=True)
-    os.makedirs(cartoonized_dir, exist_ok=True)
-    
-    # ═══════════════════════════════════════════════════════════════
-    # UPLOAD & PROCESS SECTION
-    # ═══════════════════════════════════════════════════════════════
-    
-    st.markdown("## 🖼️ Upload and Transform Your Image")
-    
-    uploaded_file = st.file_uploader(
-        "Choose an image...", 
-        type=['jpg', 'jpeg', 'png', 'bmp'],
-        help="Upload an image to apply Anime/Cartoon Effects"
-    )
-    
-    if uploaded_file is not None:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### 📷 Original Image")
-            image = Image.open(uploaded_file)
-            st.image(image, use_column_width=True)
-        
-        with col2:
-            st.markdown("### 🎨 Select Effect")
-            
-            effect = st.selectbox(
-                "Choose Effect",
-                available_effects,
-                help="Select an effect to apply to your image"
-            )
-            
-            # Effect descriptions
-            effect_descriptions = {
-                "Hayao": "🌿 Soft, watercolor Ghibli-style animation (Miyazaki)",
-                "Shinkai": "✨ Vibrant, cinematic lighting (Your Name style)",
-                "Paprika": "🎨 Surreal, dreamlike anime art (Satoshi Kon)",
-                "Ghibli Style": "🏯 Studio Ghibli anime transformation",
-                "Classic Cartoon": "🎪 Traditional cartoon effect with bold outlines",
-                "Sketch": "✏️ Black and white pencil sketch",
-                "Pencil Color": "🖍️ Colored pencil drawing effect",
-                "Oil Painting": "🖌️ Oil painting texture and style"
-            }
-            
-            st.info(f"ℹ️ {effect_descriptions.get(effect, 'Transform your image')}")
-            
-            if st.button("✨ Apply Effect", use_container_width=True, type="primary"):
-                with st.spinner(f"🔄 Applying {effect} effect..."):
-                    try:
-                        # Convert PIL to OpenCV
-                        img_array = np.array(image)
-                        img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-                        
-                        # Process image
-                        result = processor.process_image(img_bgr, effect)
-                        
-                        # Convert back to RGB
-                        result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
-                        result_pil = Image.fromarray(result_rgb)
-                        
-                        # Save images with timestamp
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        original_path = f"{original_dir}/original_{timestamp}.png"
-                        cartoonized_path = f"{cartoonized_dir}/cartoon_{effect.replace(' ', '_')}_{timestamp}.png"
-                        
-                        image.save(original_path)
-                        cv2.imwrite(cartoonized_path, result)
-                        
-                        # Store in session
-                        st.session_state.processed_image = result_pil
-                        st.session_state.processed_path = cartoonized_path
-                        st.session_state.effect_applied = effect
-                        
-                        st.success(f"✅ {effect} effect applied successfully!")
-                        st.rerun()
-                        
-                    except Exception as e:
-                        st.error(f"❌ Error processing image: {str(e)}")
-                        st.info("💡 Tip: If using anime styles, make sure models are downloaded")
-        # Display processed image if available
-        if 'processed_image' in st.session_state:
-            st.markdown("---")
-            st.markdown("## 🎉 Result")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("### 📷 Original")
-                st.image(image, use_column_width=True)
-            
-            with col2:
-                st.markdown(f"### 🎨 {st.session_state.effect_applied}")
-                st.image(st.session_state.processed_image, use_column_width=True)
-                
-                # Download button
-                try:
-                    with open(st.session_state.processed_path, 'rb') as file:
-                        st.download_button(
-                            label="💾 Download Result",
-                            data=file,
-                            file_name=f"toonify_{st.session_state.effect_applied.lower().replace(' ', '_')}.png",
-                            mime="image/png",
-                            use_container_width=True,
-                            type="primary"
-                        )
-                except Exception as e:
-                    st.error(f"Error loading download file: {e}")
-            
-            # Clear result button
-            if st.button("🗑️ Clear Result & Upload New Image"):
-                del st.session_state.processed_image
-                del st.session_state.processed_path
-                del st.session_state.effect_applied
-                st.rerun()
-    
-    # ═══════════════════════════════════════════════════════════════
-    # PREVIOUS EDITS GALLERY
-    # ═══════════════════════════════════════════════════════════════
-    
-    st.markdown("---")
-    st.markdown("### 📚 Your Previous Edits")
-    
-    if os.path.exists(cartoonized_dir):
-        cartoon_files = sorted(
-            [f for f in os.listdir(cartoonized_dir) if f.endswith(('.png', '.jpg', '.jpeg'))],
-            reverse=True
-        )
-        
-        if cartoon_files:
-            # Show last 6 images
-            cols = st.columns(3)
-            for idx, file in enumerate(cartoon_files[:6]):
-                with cols[idx % 3]:
-                    img_path = f"{cartoonized_dir}/{file}"
-                    try:
-                        img = Image.open(img_path)
-                        st.image(img, caption=file, use_column_width=True)
-                        
-                        # Download button for each
-                        with open(img_path, 'rb') as f:
-                            st.download_button(
-                                label="⬇️ Download",
-                                data=f,
-                                file_name=file,
-                                mime="image/png",
-                                key=f"download_{file}",
-                                use_container_width=True
-                            )
-                    except Exception as e:
-                        st.error(f"Error loading {file}")
-        else:
-            st.info("📭 No previous edits found. Start by uploading and processing an image!")
-    else:
-        st.info("📭 No previous edits found. Start by uploading and processing an image!")
-
-# =============================================================================
-# DEFAULT FALLBACK (Should not reach here)
-# =============================================================================
-else:
-    if is_logged_in():
-        st.session_state.page = "dashboard"
-    else:
-        st.session_state.page = "landing"
-    st.rerun()

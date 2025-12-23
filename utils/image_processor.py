@@ -36,7 +36,7 @@ class ImageProcessor:
                 print(f"  ⚠️ Missing {style} model at {path}")
         
         # Check Ghibli model
-        ghibli_path = "anime_models\Ghibli.onnx"
+        ghibli_path = "anime_models/Ghibli.onnx"
         self.ghibli_available = os.path.exists(ghibli_path)
         if self.ghibli_available:
             print(f"  ✅ Found Ghibli model")

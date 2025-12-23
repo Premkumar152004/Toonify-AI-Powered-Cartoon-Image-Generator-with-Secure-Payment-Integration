@@ -51,3 +51,7 @@ Input Image/*.jpeg
 
 # Environment variables
 .env
+temp/
+data/transactions/
+__pycache__/
+.env
