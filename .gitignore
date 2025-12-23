@@ -25,6 +25,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+$RECYCLE.BIN/
 
 # Database
 *.db
@@ -48,12 +49,13 @@ Input Image/*.jpeg
 
 # Logs
 *.log
+*.tmp
+*.bak
 
-# Environment variables
+# Environment variables / temp
 .env
 temp/
 data/transactions/
-__pycache__/
-.env
-anime_models/
-*.onnx
+
+# Jupyter
+.ipynb_checkpoints/

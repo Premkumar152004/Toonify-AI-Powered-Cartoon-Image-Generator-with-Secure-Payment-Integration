@@ -1,6 +1,9 @@
+# LFS for large model / media files
+*.onnx filter=lfs diff=lfs merge=lfs -text
 *.pth filter=lfs diff=lfs merge=lfs -text
 *.h5 filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpg !text !filter !merge !diff
-*.png !text !filter !merge !diff
+
+# Images tracked normally (no LFS)
+*.jpg text
+*.png text
