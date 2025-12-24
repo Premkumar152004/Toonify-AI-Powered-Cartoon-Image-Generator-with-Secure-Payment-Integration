@@ -1,270 +1,309 @@
-🎨 AI-Based Image Transformation Tool for Cartoon & Anime Effect Generation
-📌 Project Title
+# 🎨 AI-Based Image Transformation Tool
 
-AI-Based Image Transformation Tool for Cartoon & Anime Effect Generation
+Convert real-world images into stunning cartoon and anime-style artwork using advanced deep learning models.
 
-👨‍💻 Developed By
 
-Prem Kumar R
-November Batch – 2025
 
-📖 Project Description
+## 📋 Table of Contents
 
-This project is a web-based AI image transformation system that converts real-world images into cartoon and anime-style images using computer vision and deep learning models.
+- [Overview](#overview)
+- [Features](#features)
+- [Demo](#demo)
+- [Technologies](#technologies)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Database Schema](#database-schema)
+- [Security](#security)
+- [Future Enhancements](#future-enhancements)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
-The application supports:
+---
 
-Cartoon image generation
+## 🌟 Overview
 
-Anime-style image transformation using AnimeGAN
+This web-based AI image transformation system leverages computer vision and deep learning to convert photographs into cartoon and anime-style images. Built with Python and Streamlit, it provides an intuitive interface for users to explore various artistic styles powered by AnimeGAN models.
 
-Multiple anime styles (Ghibli, Hayao, Paprika, Shinkai)
+### Key Capabilities
 
-User authentication
+- **Cartoon Conversion**: Transform images using OpenCV-based filters
+- **Anime Style Transfer**: Apply multiple anime aesthetics using pre-trained AnimeGAN models
+- **User Management**: Secure authentication and personalized image history
+- **Admin Dashboard**: Monitor system usage and manage users
+- **Payment Integration**: Premium feature access control
 
-Admin dashboard
+---
 
-Payment system integration
+## ✨ Features
 
-Image history management
+### Image Transformation
+- **Cartoon Effect**: Edge detection and bilateral filtering for cartoon-style images
+- **Anime Styles**: Four distinct anime aesthetics
+  - 🎭 **Ghibli**: Studio Ghibli-inspired watercolor style
+  - 🌸 **Hayao**: Classic Miyazaki animation style
+  - 🎨 **Paprika**: Vibrant and surreal artistic style
+  - 🌅 **Shinkai**: Makoto Shinkai's signature lighting and atmosphere
 
-The application is built using Python, Streamlit, OpenCV, and ONNX deep learning models.
+### User Features
+- Secure registration and login system
+- Password encryption using SHA-256 hashing
+- Session-based authentication
+- Personal image history and gallery
+- Image upload and download capabilities
 
-🎯 Objectives
+### Admin Features
+- User management dashboard
+- Usage analytics and monitoring
+- System access control
+- Database administration
 
-Convert real images into cartoon/anime effects
+### Payment System
+- Payment record tracking
+- Premium feature access control
+- Transaction history management
 
-Implement AI-based image processing
+---
 
-Provide a user-friendly web interface
+## 🎥 Demo
 
-Secure user authentication and admin access
+> Add screenshots or GIFs of your application here
 
-Store user data and image history
+```
+[Before Image] --> [Processing] --> [After Image]
+```
 
-Demonstrate real-world AI application
+---
 
-🚀 Features
-🖼️ Image Transformation
+## 🛠️ Technologies
 
-Cartoon image conversion
+### Core Technologies
+| Technology | Purpose |
+|------------|---------|
+| **Python 3.8+** | Primary programming language |
+| **Streamlit** | Web application framework |
+| **OpenCV** | Image processing and computer vision |
+| **ONNX Runtime** | Deep learning model inference |
+| **SQLite3** | Database management |
 
-Anime image generation using AnimeGAN
+### Libraries & Dependencies
+- **NumPy**: Numerical computing
+- **Pillow (PIL)**: Image manipulation
+- **Hashlib**: Secure password hashing
+- **AnimeGAN Models**: Pre-trained ONNX models for anime style transfer
 
-Multiple anime styles:
+---
 
-Ghibli
+## 📥 Installation
 
-Hayao
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
+- Git
 
-Paprika
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/your-username/AI-Based-Image-Transformation-Tool.git
+cd AI-Based-Image-Transformation-Tool
+```
 
-Shinkai
+### Step 2: Create Virtual Environment
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-👤 User Management
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
 
-User registration & login
+### Step 3: Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-Secure password hashing
+### Step 4: Download Models
+Ensure all ONNX models are present in the `anime_models/` directory:
+- Ghibli.onnx
+- Hayao.onnx
+- Paprika.onnx
+- Shinkai.onnx
 
-Session-based authentication
+### Step 5: Run Setup (Optional)
+```bash
+python setup.py
+```
 
-🛠️ Admin Dashboard
+---
 
-View registered users
+## 🚀 Usage
 
-Monitor image usage
+### Starting the Application
+```bash
+streamlit run app.py
+```
 
-Control system access
+The application will open in your default web browser at `http://localhost:8501`
 
-💳 Payment System
+### Basic Workflow
 
-Payment database handling
+1. **Register/Login**: Create an account or log in with existing credentials
+2. **Upload Image**: Select an image from your device (JPEG, PNG)
+3. **Choose Style**: Select either cartoon effect or one of the anime styles
+4. **Process**: Click the transform button to apply the effect
+5. **Download**: Save your transformed image to your device
 
-Payment engine logic
+### Admin Access
+```bash
+streamlit run admin_dashboard.py
+```
+Default admin credentials should be configured during setup.
 
-Controlled access to premium features
+---
 
-📂 Data Handling
+## 📂 Project Structure
 
-Image upload & processing
-
-Image history storage
-
-SQLite database integration
-
-🧠 Technologies Used
-Programming Language
-
-Python
-
-Frameworks & Libraries
-
-Streamlit
-
-OpenCV
-
-NumPy
-
-PIL (Pillow)
-
-SQLite3
-
-ONNX Runtime
-
-Hashlib
-
-AI Models
-
-AnimeGAN (.onnx models)
-
-Tools
-
-Git & GitHub
-
-VS Code
-
-Python Virtual Environment
-
-🏗️ Project Folder Structure (From ZIP)
-AI-Based-Image-Transformation-Tool-for-Cartoon-Effect-Generation/
+```
+AI-Based-Image-Transformation-Tool/
 │
-├── app.py                     # Main Streamlit application
-├── admin_dashboard.py          # Admin panel
-├── setup.py                    # Project setup
-├── requirements.txt            # Dependencies
-├── README.md                   # Documentation
+├── app.py                          # Main application entry point
+├── admin_dashboard.py              # Admin panel interface
+├── setup.py                        # Initial setup script
+├── requirements.txt                # Python dependencies
+├── README.md                       # Project documentation
 │
-├── anime_models/               # Deep learning models
+├── anime_models/                   # Pre-trained ONNX models
 │   ├── Ghibli.onnx
 │   ├── Hayao.onnx
 │   ├── Paprika.onnx
 │   └── Shinkai.onnx
 │
-├── assets/
+├── assets/                         # Static assets
 │   ├── picc.jpg
 │   └── backgrounds/
 │
-├── utils/
-│   ├── auth.py                 # Authentication logic
-│   ├── database.py             # User & image database
-│   ├── validators.py           # Input validation
-│   ├── image_processor.py      # Cartoon image processing
-│   ├── animegan_processor.py   # AnimeGAN image processing
-│   ├── cartoon.py              # Cartoon filters
-│   ├── ghibli.py               # Ghibli style handler
-│   ├── Shinkai.py              # Shinkai style handler
+├── utils/                          # Utility modules
+│   ├── auth.py                     # Authentication logic
+│   ├── database.py                 # Database operations
+│   ├── validators.py               # Input validation
+│   ├── image_processor.py          # Cartoon processing
+│   ├── animegan_processor.py       # AnimeGAN processing
+│   ├── cartoon.py                  # Cartoon filters
+│   ├── ghibli.py                   # Ghibli style handler
+│   └── Shinkai.py                  # Shinkai style handler
 │
-├── payment_system/
-│   ├── payment_engine.py       # Payment logic
-│   └── payment_db.py           # Payment database
-│
-└── __pycache__/                # Compiled Python files
+└── payment_system/                 # Payment module
+    ├── payment_engine.py           # Payment logic
+    └── payment_db.py               # Payment database
+```
 
-⚙️ Installation & Execution
-1️⃣ Clone Repository
-git clone https://github.com/your-username/AI-Based-Image-Transformation-Tool.git
-cd AI-Based-Image-Transformation-Tool
+---
 
-2️⃣ Create Virtual Environment
-python -m venv venv
+## 🗄️ Database Schema
 
-3️⃣ Activate Virtual Environment
+### Users Table
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-Windows
+### Image History Table
+```sql
+CREATE TABLE image_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    original_image BLOB,
+    transformed_image BLOB,
+    style TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
 
-venv\Scripts\activate
+### Payments Table
+```sql
+CREATE TABLE payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    amount DECIMAL(10,2),
+    status TEXT,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+---
+
+## 🔐 Security
+
+This application implements multiple security measures:
+
+- **Password Hashing**: SHA-256 encryption for all passwords
+- **Session Management**: Secure session-based authentication
+- **Input Validation**: Sanitization of user inputs to prevent injection attacks
+- **Role-Based Access**: Separate permissions for users and administrators
+- **SQL Injection Prevention**: Parameterized queries for database operations
+
+---
+
+## 🚀 Future Enhancements
+
+- [ ] Additional anime and cartoon styles
+- [ ] GAN-based super-resolution for higher quality outputs
+- [ ] Batch processing capabilities
+- [ ] Cloud deployment (AWS/GCP/Azure)
+- [ ] Mobile application (React Native/Flutter)
+- [ ] User profile customization
+- [ ] Real payment gateway integration (Stripe/PayPal)
+- [ ] Social sharing features
+- [ ] API endpoint for third-party integration
+- [ ] Advanced image editing tools
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Contribution Guidelines
+- Follow PEP 8 style guide for Python code
+- Add comments and docstrings for new functions
+- Update documentation for new features
+- Write unit tests for critical functionality
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Note**: This project is developed for educational and academic purposes. The AnimeGAN models used are subject to their respective licenses.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Developer**: Prem Kumar R (November Batch – 2025)
+- **AnimeGAN**: Original model developers for anime style transfer
+- **OpenCV Community**: For computer vision tools and resources
+- **Streamlit Team**: For the excellent web framework
+- Special thanks to mentors and instructors for guidance and support
 
 
-Linux / Mac
 
-source venv/bin/activate
-
-4️⃣ Install Dependencies
-pip install -r requirements.txt
-
-5️⃣ Run the Application
-streamlit run app.py
-
-⚙️ How the System Works
-
-User logs in or registers
-
-Image is uploaded through Streamlit UI
-
-User selects:
-
-Cartoon effect OR
-
-Anime style (Ghibli / Hayao / Paprika / Shinkai)
-
-Image is processed using:
-
-OpenCV filters (cartoon)
-
-AnimeGAN ONNX models (anime)
-
-Transformed image is displayed
-
-Image and usage data are stored in database
-
-🗄️ Database Details
-
-SQLite database used
-
-Stores:
-
-User credentials
-
-Image history
-
-Payment records
-
-Passwords stored using hashed encryption
-
-🔐 Security Implementation
-
-SHA-256 password hashing
-
-Session-based login validation
-
-Admin-only dashboard access
-
-Input validation to prevent misuse
-
-🎓 Learning Outcomes
-
-Hands-on experience with AI image processing
-
-Integration of deep learning models
-
-Web application development using Streamlit
-
-Database management using SQLite
-
-Secure authentication implementation
-
-Real-world AI project deployment
-
-📈 Future Enhancements
-
-More anime styles
-
-GAN-based high-resolution models
-
-Cloud deployment
-
-Mobile app version
-
-User profile dashboard
-
-Real payment gateway integration
-
-📜 License
-
-This project is developed strictly for educational, academic, and internship purposes.
-Free to use and modify for learning.
-
-🙏 Acknowledgement
-
-I would like to thank my mentors and institution for their guidance and support throughout the development of this project.
+<div align="center">
+Made with ❤️ by Prem Kumar R
+</div>
