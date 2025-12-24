@@ -4,6 +4,8 @@
 *.h5 filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 
-# Images tracked normally (no LFS)
-*.jpg text
-*.png text
+# Images tracked as binary (NOT text, NOT LFS)
+*.jpg binary
+*.png binary
+*.jpeg binary
+*.gif binary
